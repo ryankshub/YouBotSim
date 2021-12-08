@@ -3,6 +3,7 @@
 # RKS
 
 # Project imports
+import mile1
 import mile2
 # Python imports
 import argparse
@@ -17,19 +18,87 @@ if __name__ == "__main__":
     parser.add_argument('--ani-file',
         help='output csv for animations. Currently only supports milestone 2. Defaults to "ani_file.csv"',
         default="ani_file.csv", type=str)
-    parser.add_argument('--only_mile1', help='produce only the outputs for milestone 1',
+    parser.add_argument('--test_mile1', help='produce only the outputs for milestone 1',
         default=False, action='store_true')
-    parser.add_argument('--only_mile2', help='produce only the outputs for milestone 2',
+    parser.add_argument('--test_mile2', help='produce only the outputs for milestone 2',
         default=False, action='store_true')
-    parser.add_argument('--only_mile3', help='produce only the outputs for milestone 3',
+    parser.add_argument('--test_mile3', help='produce only the outputs for milestone 3',
         default=False, action='store_true')
     args = parser.parse_args()
 
-    if args.only_mile1 or args.only_mile3:
-        print("Only Milestone 2 is currently supported")
+    NUM_STATES = 12
+    NUM_WHEEL = 4
+    NUM_JOINT = 5
+    if args.test_mile3:
+        print("Only Milestones 1 and 2 are currently supported")
         exit(1)
+    if args.test_mile1:
+        # Make zero motion
+        init_states = [0. for x in range(NUM_STATES)]
+        wheel_vel = [0. for x in range(NUM_WHEEL)]
+        joint_vel = [0. for x in range(NUM_JOINT)]
+        # Write to csv
+        zero_output_file = "../mile1_tests/zm.csv"
+        with open(zero_output_file, 'w', newline='') as csvfile:
+            zero_output_writer = csv.writer(csvfile)
+            states = init_states
+            
+            for i in range(100):
+                next_states = mile1.NextState(states, joint_vel+wheel_vel, 0.01, None, None)
+                row = next_states.copy() + [0]
+                zero_output_writer.writerow(row)
+                states = next_states.copy()
+        
+        # Make forward motion
+        init_states = [0 for x in range(NUM_STATES)]
+        wheel_vel = [10 for x in range(NUM_WHEEL)]
+        joint_vel = [0 for x in range(NUM_JOINT)]
+        # Write to csv
+        forward_output_file = "../mile1_tests/fm.csv"
+        with open(forward_output_file, 'w', newline='') as csvfile:
+            forward_output_writer = csv.writer(csvfile)
+            states = init_states
+            
+            for i in range(100):
+                next_states = mile1.NextState(states, joint_vel+wheel_vel, 0.01, None, None)
+                row = next_states.copy() + [0]
+                forward_output_writer.writerow(row)
+                states = next_states.copy()
+        
+        # Make side motion
+        init_states = [0 for x in range(NUM_STATES)]
+        wheel_vel = [-10, 10, -10, 10]
+        joint_vel = [0 for x in range(NUM_JOINT)]
+        # Write to csv
+        side_output_file = "../mile1_tests/sm.csv"
+        with open(side_output_file, 'w', newline='') as csvfile:
+            side_output_writer = csv.writer(csvfile)
+            states = init_states
+            
+            for i in range(100):
+                next_states = mile1.NextState(states, joint_vel+wheel_vel, 0.01, None, None)
+                row = next_states.copy() + [0]
+                side_output_writer.writerow(row)
+                states = next_states.copy()
 
-    if args.only_mile2:
+        # Make counter-clockwise turn
+        init_states = [0 for x in range(NUM_STATES)]
+        wheel_vel = [-10, 10, 10, -10]
+        joint_vel = [0 for x in range(NUM_JOINT)]
+        # Write to csv
+        turn_output_file = "../mile1_tests/tm.csv"
+        with open(turn_output_file, 'w', newline='') as csvfile:
+            turn_output_writer = csv.writer(csvfile)
+            states = init_states
+            
+            for i in range(100):
+                next_states = mile1.NextState(states, joint_vel+wheel_vel, 0.01, None, None)
+                row = next_states.copy() + [0]
+                turn_output_writer.writerow(row)
+                states = next_states.copy()
+
+
+    elif args.test_mile2:
         # Set up configuration for milestone 2
         T_se_init = np.array([[0., 0., 1., 0.],
                               [0., 1., 0., 0.],
