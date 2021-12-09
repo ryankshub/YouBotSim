@@ -62,7 +62,7 @@ def FeedbackControl(X, X_d, X_dnext, kp, ki, Err, pinv_Je, dt):
     Vb = np.matmul(Adj_T_ed, V_d.T) + np.matmul(KP,Xerr) + np.matmul(KI,Xerr_sum)
     #Return results
     rtn_list = np.matmul(pinv_Je, Vb)
-    return np.around(rtn_list, 4), Xerr_sum
+    return np.around(rtn_list, 4), Xerr_sum, Xerr
 
 
 def GetPinvJacobian(M, T_b0, Blist, thetalist):
@@ -107,7 +107,7 @@ def GetPinvJacobian(M, T_b0, Blist, thetalist):
 
     # Get endeffector Jacobian
     Je = np.hstack((J_base, J_arm))
-    pinv_Je = np.linalg.pinv(Je, 1e-5)
+    pinv_Je = np.linalg.pinv(Je, 1e-4)
     return pinv_Je
 
 

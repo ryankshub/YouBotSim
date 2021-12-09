@@ -25,7 +25,7 @@ def NextState(states, velocities, dt, wheel_vel_lim=None, joint_vel_lims=None):
         list[9] velocities:
             The wheel and joint velocities (rads/s)
             Arranged in the following order:
-            [j1_dot, j2_dot, j3_dot, j4_dot, j5_dot, w1_dot, w2_dot, w3_dot, w4_dot]
+            [w1_dot, w2_dot, w3_dot, w4_dot, j1_dot, j2_dot, j3_dot, j4_dot, j5_dot,]
         float dt:
             Time duration velocities are applied
         float wheel_vel_lim: default None
@@ -58,13 +58,12 @@ def NextState(states, velocities, dt, wheel_vel_lim=None, joint_vel_lims=None):
 
     # Parse velocities
     if joint_vel_lims is None:
-        j1_dot, j2_dot, j3_dot, j4_dot, j5_dot = velocities[:5]
+        j1_dot, j2_dot, j3_dot, j4_dot, j5_dot = velocities[4:]
     else:
-        j1_dot, j2_dot, j3_dot, j4_dot, j5_dot = [limiter(v,l) for v,l in zip(velocities[:5], joint_vel_lims)]
+        j1_dot, j2_dot, j3_dot, j4_dot, j5_dot = [limiter(v,l) for v,l in zip(velocities[4:], joint_vel_lims)]
 
-    w1_dot, w2_dot, w3_dot, w4_dot = [limiter(v, wheel_vel_lim) for v in velocities[5:]]
+    w1_dot, w2_dot, w3_dot, w4_dot = [limiter(v, wheel_vel_lim) for v in velocities[:4]]
     
-
     # Calculate new values
     # Wheel Angles
     new_w1 = angle_wrap(w1 + w1_dot*dt)
@@ -113,7 +112,7 @@ def NextState(states, velocities, dt, wheel_vel_lim=None, joint_vel_lims=None):
 
     #Return results
     rtn_list = [new_phi_b, new_x_b, new_y_b, new_j1, new_j2, new_j3, new_j4, new_j5, new_w1, new_w2, new_w3, new_w4]
-    rtn_list = np.around(rtn_list, 6)
+    rtn_list = np.around(rtn_list, 4)
     return rtn_list
 
 
@@ -134,7 +133,7 @@ def limiter(value, limit):
         return value
     if value > limit:
         return limit
-    elif value < limit:
+    elif value < -limit:
         return -limit
     else:
         return value
