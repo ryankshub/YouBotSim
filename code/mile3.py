@@ -32,6 +32,11 @@ def FeedbackControl(X, X_d, X_dnext, kp, ki, Err, pinv_Je, dt):
             psuedo-inverse Jacobian
         float dt:
             Time duration
+    
+    Rtns:
+        a list of wheel and joint velocities arranged as:
+            [w1_dot, w2_dot, w3_dot, w4_dot, j1_dot, j2_dot, j3_dot, j4_dot, j5_dot,]
+
     """
     ### GET VB SECTION
     # Calculate gain matrix
@@ -69,14 +74,19 @@ def GetPinvJacobian(M, T_b0, Blist, thetalist):
     """
     Calculate and return the psuedo-inverse Jacabian
 
-    np.array(4,4) M:
-        Home configuration of the arm
-    np.array(4,4) T_b0:
-        Transformation matrix from body frame to base of the arm
-    np.array(6,5) Blist:
-        Screw-axis relative to the body frame
-    np.array(5) thetalist:
-        Current values of the joint angles
+    Args:
+        np.array(4,4) M:
+            Home configuration of the arm
+        np.array(4,4) T_b0:
+            Transformation matrix from body frame to base of the arm
+        np.array(6,5) Blist:
+            Screw-axis relative to the body frame
+        np.array(5) thetalist:
+            Current values of the joint angles
+
+    Rtns:
+        np.array(9, 6) pinv_Je:
+            The psuedo inverse of the jacobian
     """
     # Get arm Jacobian
     J_arm = mr.JacobianBody(Blist, thetalist)

@@ -6,6 +6,7 @@
 import mile1
 import mile2
 import mile3
+import util
 # Python imports
 import argparse
 import csv
@@ -21,6 +22,20 @@ if __name__ == "__main__":
     parser.add_argument('--output',
         help='output csv for animations. Currently only supports milestone 2. Defaults to "output.csv"',
         default="output.csv", type=str)
+    parser.add_argument('--kp',
+        help='Proportional gain for the feedback controller. Defaults to 0',
+        default=0.0, type=float)
+    parser.add_argument('--ki',
+        help='Integral gain for the feedback controller. Defaults to 0',
+        default=0.0, type=float)
+    parser.add_argument('--init_q_config', help="Initial chassis configuration; default is s-frame origin", 
+        default=[0.0, 0.0, 0.0], nargs=3, type=float,
+        metavar=("CHASSIS_PHI", "CHASSIS_X", "CHASSIS_Y"))
+    parser.add_argument('--init_joint_angles', help="Initial joint positions(rad); default is (-np.pi/10, -np.pi/20, -np.pi/20, -np.pi/2, 0.0)", 
+        default=[-np.pi/10, -np.pi/20, -np.pi/20, -np.pi/2, 0.0], nargs=5, type=float,
+        metavar=("JOINT_POS1", "JOINT_POS2", "JOINT_POS3", "JOINT_POS4", "JOINT_POS5"))
+    parser.add_argument('--new_task', help='To show robot grabbing block behind it',
+        default=False, action='store_true')
     parser.add_argument('--test_mile1', help='produce only the outputs for milestone 1',
         default=False, action='store_true')
     parser.add_argument('--test_mile2', help='produce only the outputs for milestone 2',
@@ -80,6 +95,18 @@ if __name__ == "__main__":
                         [0., 0., 1., 0.025],
                         [0., 0., 0., 1.]])
 
+    # Init position and orientation of the cube
+    T_sc_init_new = np.array([[1., 0., 0., .5],
+                        [0., 1., 0., .5],
+                        [0. ,0. ,1., 0.025],
+                        [0. ,0. ,0., 1.]])
+    
+    # Goal position and orientation of the cube
+    T_sc_goal_new = np.array([[0., 1., 0., .5],
+                        [-1., 0., 0.,-.5],
+                        [0., 0., 1., 0.025],
+                        [0., 0., 0., 1.]])
+
     # Transformation matrix representing position of the end-effector
     # relative from the cube to prepare grabbing it
     T_ce_standoff = np.array([[-np.sqrt(2)/2, 0., np.sqrt(2)/2, 0.0085],
@@ -98,21 +125,40 @@ if __name__ == "__main__":
     if not (args.test_mile1 or args.test_mile2 or args.test_mile3):
         ### MAIN INTEGRATED LOOP
         dt = 0.01
-        ee_trajs = mile2.TrajectoryGenerator(T_se_init, 
-                                             T_sc_init,
-                                             T_sc_goal,
-                                             T_ce_standoff,
-                                             T_ce_grasp,
-                                             dt)
-        chassis_states = np.zeros(3)
-        joint_states = np.array([0.0, -np.pi/20, -np.pi/20, -np.pi/2, 0.0])
+        ee_trajs = None
+        if args.new_task:
+            ee_trajs = mile2.TrajectoryGenerator(T_se_init, 
+                                                T_sc_init_new,
+                                                T_sc_goal_new,
+                                                T_ce_standoff,
+                                                T_ce_grasp,
+                                                dt)
+        else:
+            ee_trajs = mile2.TrajectoryGenerator(T_se_init, 
+                                                T_sc_init,
+                                                T_sc_goal,
+                                                T_ce_standoff,
+                                                T_ce_grasp,
+                                                dt)
+        chassis_states = np.array(args.init_q_config)
+        joint_states = np.array(args.init_joint_angles)
         wheel_states = np.zeros(4)
         Integration_Err = np.zeros(6)
+        kp = args.kp
+        ki = args.ki
         Xerr_log = []
         states_log = []
-        states_log.append(np.zeros(13))
+        init_states = np.hstack((chassis_states, joint_states, wheel_states))
+        states_log.append(np.hstack((init_states, np.array([0]))))
 
         for i in range(len(ee_trajs) - 1):
+            #Status messages for the user
+            if i == 0:
+                print("Generating Animation .csv")
+                print("This may take a while")
+            elif i == len(ee_trajs)//2:
+                print("Almost done...")
+
             # Calculate inv Jacobian
             pinv_Je = mile3.GetPinvJacobian(M_0e, T_b0, Blist, joint_states)
             
@@ -122,20 +168,17 @@ if __name__ == "__main__":
                                 chassis_states[2])
             T_0e = mr.FKinBody(M_0e, Blist, joint_states)
             curr_X = np.around( np.matmul( np.matmul(T_sb, T_b0), T_0e ), 4)
-            # desi_X = np.around(ee_trajs[i][0], 3)
-            # desi_X_n = np.around(ee_trajs[i+1][0], 3)
-            # print("Current X", f"{curr_X}")
-            # print("Desired X", f"{ee_trajs[i][0]}")
+           
             # Use FeedbackControl
             velocities, Xerr_sum, Xerr = mile3.FeedbackControl(curr_X, 
                                                                ee_trajs[i][0], 
                                                                ee_trajs[i+1][0],
-                                                               1,
-                                                               0,
+                                                               kp,
+                                                               ki,
                                                                Integration_Err, 
                                                                pinv_Je,
                                                                dt)
-            # print("Velcities", f"{velocities}")
+           
             # Update integration error
             Integration_Err = Xerr_sum
             # Log X_err
@@ -143,9 +186,9 @@ if __name__ == "__main__":
 
             # Update states
             states = np.hstack((chassis_states, joint_states, wheel_states))
-            # print(f"states {states}")
+            
             next_states = mile1.NextState(states, velocities, dt, 30, [20, 20, 20, 20, 20])
-            # print(f"next_states {next_states}")
+            
             # Log states
             complete_states = np.hstack((next_states, np.array([ee_trajs[i][1]])))
             states_log.append(complete_states)
@@ -156,17 +199,32 @@ if __name__ == "__main__":
 
         
         # Write logs to files
+        print(f"Porting state data to {args.output}")
         output_file = args.output
         with open(output_file, 'w', newline='') as csvfile:
             output_writer = csv.writer(csvfile)
             for s in states_log:
                 output_writer.writerow(s)
         
-        xerr_file = "xerr_log.csv"
+        xerr_file = args.output[:-4] + "_xerr.csv"
+        xerr_data = []
+        print(f"Porting xerr data to {xerr_file}")
         with open(xerr_file, 'w', newline='') as csvfile:
-            xerr_writer = csv.writer(csvfile)
+            xerr_writer = csv.writer(csvfile, csv.QUOTE_NONNUMERIC)
             for err in Xerr_log:
-                xerr_writer.writerow(err)
+                row = [err[0], 
+                       err[1][0],
+                       err[1][1],
+                       err[1][2],
+                       err[1][3],
+                       err[1][4],
+                       err[1][5]]
+                
+                xerr_writer.writerow(row)
+                xerr_data.append(row)
+        print(f"Plotting Xerr data")
+        xerr_data = np.array(xerr_data)
+        util.PlotXerr(xerr_data)
 
 
     else:

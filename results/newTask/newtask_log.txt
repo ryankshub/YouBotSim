@@ -1,0 +1,10 @@
+# Logfile for new_task behavior
+[in final_project/code] ./run.py --new_task --kp 4
+Generating Animation .csv
+This may take a while
+Almost done...
+Porting state data to output.csv
+Porting xerr data to output_xerr.csv
+Plotting Xerr data
+Formatting Data
+Plotting

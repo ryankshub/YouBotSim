@@ -1,0 +1,10 @@
+# Logfile for best behavior
+[in final_project/code] ./run.py --init_q_config 0.5236 0.1 0.1 --kp 5.5
+Generating Animation .csv
+This may take a while
+Almost done...
+Porting state data to output.csv
+Porting xerr data to output_xerr.csv
+Plotting Xerr data
+Formatting Data
+Plotting

@@ -35,6 +35,12 @@ def NextState(states, velocities, dt, wheel_vel_lim=None, joint_vel_lims=None):
             The pose of the end-effector to grab the cube (rad/s)
             Arranged as [j1_dot_lim, j2_dot_lim, j3_dot_lim, j4_dot_lim, j5_dot_lim]
             A value of None means no limits
+    
+    Rtns:
+        list[12] next_states:
+            The next chassis configuration, wheel angles, and joint angles:
+            Arranged in the following order:
+            [phi_b, x_b, y_b, j1, j2, j3, j4, j5, w1, w2, w3, w4,]
     """
     #Constant
     LENGTH = .235

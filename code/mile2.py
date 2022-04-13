@@ -34,6 +34,9 @@ def TrajectoryGenerator(T_se_init,
             The pose of the end-effector to grab the cube
         float dt:
             Time duration
+
+    Rtns:
+        list of T_se as trajectory for robot to follow
     """
     # Constants
     grip_action = 65
@@ -44,7 +47,7 @@ def TrajectoryGenerator(T_se_init,
     T_se_dropset = np.matmul(T_sc_goal, T_ce_standoff)
     T_se_open = np.matmul(T_sc_goal, T_ce_grasp)
     # Set up time duration
-    screw_duration = 5  # number of seconds a screw motion should take
+    screw_duration = 7  # number of seconds a screw motion should take
     screw_samples = np.around(screw_duration/dt)
     turn_duration = 10  # number of seconds a screw motion should take
     turn_samples = np.around(turn_duration/dt)
